@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import CreateNoteModal from '@/app/fase3/CreateNoteModal'; // Ajusta la ruta si pusiste el componente en otra carpeta
-import NoteCard from '@/app/fase3/NoteCard';             // Ajusta la ruta según tu estructura
+import CreateNoteModal from '@/app/fase3/CreateNoteModal'; // 👈 Verifica que esta ruta sea la tuya
+import NoteCard from '@/app/fase3/NoteCard';             // 👈 Verifica que esta ruta sea la tuya
 
 interface Comment {
   text: string;
@@ -17,19 +17,16 @@ interface Note {
   comment?: Comment | null;
 }
 
-export default function PaginaGeneral() {
+function ContenidoPaginaGeneral() {
   const router = useRouter();
   const params = useParams();
   const slug = params?.slug as string;
 
-  // Formatear el slug para mostrar el nombre limpio (ej: 'mary-luz' -> 'Mary Luz')
   const familyName = slug ? slug.replace(/-/g, ' ') : '';
 
-  // Estados de la página
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
-  // Lista de notas simulada (aquí luego conectaremos tu backend)
+
   const [notes, setNotes] = useState<Note[]>([
     {
       id: '1',
@@ -50,31 +47,30 @@ export default function PaginaGeneral() {
 
       if (!sessionValid) {
         alert('Acceso no autorizado. Debes ingresar la clave desde la rueda de opciones.');
-        router.push('/'); // Redirige a la rueda si no está autenticado
+        router.push('/');
       } else {
         setIsAuthorized(true);
       }
     }
   }, [slug, router]);
 
-  // 2. Función para manejar la creación de una nueva nota (con código admin)
+  // 2. Función para manejar la creación de una nueva nota
   const handleCreateNote = (content: string, adminCode: string): boolean => {
-    // Aquí puedes validar el código admin o dejar que el backend lo valide
-    const SPECIAL_ADMIN_CODE = '9876'; 
+    const SPECIAL_ADMIN_CODE = '9876';
     if (adminCode !== SPECIAL_ADMIN_CODE) return false;
 
     const newNote: Note = {
       id: Date.now().toString(),
       content,
       date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
-      comment: null // Inicia sin comentario para que cualquier familiar pueda dejar su único comentario
+      comment: null
     };
 
     setNotes([newNote, ...notes]);
     return true;
   };
 
-  // 3. Función para agregar el comentario único a una nota específica
+  // 3. Función para agregar el comentario único
   const handleAddComment = (noteId: string, commentText: string) => {
     setNotes(prevNotes =>
       prevNotes.map(note => {
@@ -93,7 +89,11 @@ export default function PaginaGeneral() {
   };
 
   if (!isAuthorized) {
-    return <div style={{ color: '#fff', textAlign: 'center', marginTop: '4rem' }}>Verificando acceso...</div>;
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        Verificando acceso...
+      </div>
+    );
   }
 
   return (
@@ -138,7 +138,7 @@ export default function PaginaGeneral() {
         </button>
       </div>
 
-      {/* Botón de Creación de Notas (Protegido por código admin) */}
+      {/* Botón de Creación de Notas */}
       <div style={{ width: '100%', maxWidth: '600px', marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
         <button
           onClick={() => setIsCreateModalOpen(true)}
@@ -173,12 +173,25 @@ export default function PaginaGeneral() {
         )}
       </div>
 
-      {/* Modal para crear notas (Pide código admin + redacción) */}
+      {/* Modal para crear notas */}
       <CreateNoteModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmitNote={handleCreateNote}
       />
     </div>
+  );
+}
+
+// Componente principal envuelto en Suspense para que Next.js 16 compile sin errores
+export default function PaginaGeneral() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        Cargando perfil...
+      </div>
+    }>
+      <ContenidoPaginaGeneral />
+    </Suspense>
   );
 }
