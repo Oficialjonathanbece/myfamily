@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from 'react';
 import '@/styles/fase2/password/PasswordModal.css';
-import { apiService } from '@/services/api';
 import { useRouter } from 'next/navigation';
 
 interface PasswordModalProps {
