@@ -27,15 +27,27 @@ export default function NoteCard({ note, onAddComment }: NoteCardProps) {
   const [authorName, setAuthorName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmitComment = (e: FormEvent) => {
+  const handleSubmitComment = async (e: FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (!commentText.trim()) return; // Si no hay texto, no hace nada
 
     setIsSubmitting(true);
-    onAddComment(note.id, commentText.trim(), authorName.trim() || 'Familiar');
-    setCommentText('');
-    setAuthorName('');
-    setIsSubmitting(false);
+    try {
+      // Llamamos a la función del padre pasándole el texto y el autor
+      await onAddComment(
+        note.id, 
+        commentText.trim(), 
+        authorName.trim() || 'Familiar'
+      );
+      
+      // Limpiamos los campos solo si fue exitoso
+      setCommentText('');
+      setAuthorName('');
+    } catch (err) {
+      console.error("Error al enviar comentario:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Formatear fecha legible
@@ -55,7 +67,7 @@ export default function NoteCard({ note, onAddComment }: NoteCardProps) {
 
   return (
     <div className="note-card">
-      {/* Cabecera de la nota (Fecha o ID) */}
+      {/* Cabecera de la nota */}
       <div className="note-card__header">
         <span>Nota ID: #{note.id}</span>
         <span>{formatDate(note.created_at)}</span>
@@ -68,7 +80,7 @@ export default function NoteCard({ note, onAddComment }: NoteCardProps) {
 
       {/* Sección del Comentario */}
       <div className="note-card__comment-section">
-        <span className="note-card__comment-title">Comentario de la nota:</span>
+        <span className="note-card__comment-title">Comentarios de la nota:</span>
 
         {note.comments.length === 0 ? (
           <p style={{ fontSize: '0.85rem', color: '#777', fontStyle: 'italic' }}>No hay comentarios aún. ¡Sé el primero en comentar!</p>
@@ -86,21 +98,34 @@ export default function NoteCard({ note, onAddComment }: NoteCardProps) {
           </div>
         )}
           
-          <form onSubmit={handleSubmitComment} className="note-card__comment-form">
-            <textarea
-              placeholder="Escribe un comentario para esta nota..."
-              value={authorName}
-              onChange={(e) => setAuthorName(e.target.value)}
-              className="note-card__comment-input"
-            />
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="note-card__btn-comment"
-            >
-             {isSubmitting ? 'Enviando...' : 'Comentar'}
-            </button>
-          </form>
+        <form onSubmit={handleSubmitComment} className="note-card__comment-form">
+          {/* Input opcional para el nombre del autor */}
+          <input
+            type="text"
+            placeholder="Tu nombre (opcional)..."
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            className="note-card__author-input"
+            style={{ marginBottom: '0.5riem', padding: '0.4rem', borderRadius: '4px', border: '1px solid #444', background: '#222', color: '#fff' }}
+          />
+
+          {/* Textarea principal vinculado correctamente a commentText */}
+          <textarea
+            placeholder="Escribe un comentario para esta nota..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            className="note-card__comment-input"
+            required
+          />
+          
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="note-card__btn-comment"
+          >
+           {isSubmitting ? 'Enviando...' : 'Comentar'}
+          </button>
+        </form>
       </div>
     </div>
   );
