@@ -6,22 +6,42 @@ import PasswordModal from '@/app/fase2/password/PasswordModal';
 import { apiService } from '@/services/api'; // 👈 Importamos el servicio centralizado hacia FastAPI
 
   const ITEMS = [
-  'Mary luz',
-  'Fernando',
-  'Sebastian', 
   'Maria Gladis', 
-  'Rosmary Alejandra Peña Ramos', 
-  'Daniela', 
-  'Danna', 
-  'Flor Maria',
+  'Mary luz Becerra',
+
+
+  'Fernando Rodriguez',
+  'Luis David Macuare', 
+  'Mileida Ortiz',
+
+  'Sebastian "The Best Friend in the world" ', 
+
+  'Flor Maria',  
+
+  'Daniela Giraldo',
+  'David esposo de daniela', 
+
+  'Danna Giraldo', 
+  'Brayan esposo de danna',
+  'Salome y Emmanuel',
+
+  'Fernanda Becerra',
   'Wesly', 
-  'Fernanda', 
-  'Edinson', 
+  'Jesus esposo de fernanda',
+
+  'Edinson Viera', 
   'Cristian y Jenifer', 
-  'Salome y Emmanuel', 
-  'Hanna', 
+    
   'Padrino', 
-  'Madrina', 
+  'Madrina',
+
+  'Yese',
+  'Shelsy Sofia',  
+
+  'Oscar Humberto Aristizabal',
+    
+
+  'Rosmary Alejandra Peña Ramos', 
   'Familiares'
 ];
 
