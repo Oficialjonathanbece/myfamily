@@ -53,7 +53,7 @@ export default function NoteCard({ note, onAddComment }: NoteCardProps) {
   // Formatear fecha legible
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('es-ES', {
+      return new Date(dateString).toLocaleDateString('es-CO', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
