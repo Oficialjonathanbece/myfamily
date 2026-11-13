@@ -85,7 +85,7 @@ export default function NoteCard({ note, onAddComment }: NoteCardProps) {
             ))}
           </div>
         )}
-          // Si no tiene comentario, se muestra el formulario para dejar el único permitido
+          
           <form onSubmit={handleSubmitComment} className="note-card__comment-form">
             <textarea
               placeholder="Escribe un comentario para esta nota..."
