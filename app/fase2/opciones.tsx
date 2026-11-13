@@ -6,7 +6,7 @@ import PasswordModal from '@/app/fase2/password/PasswordModal';
 import { apiService } from '@/services/api'; // 👈 Importamos el servicio centralizado hacia FastAPI
 
   const ITEMS = [
-  'Sebastian "The Best Friend in the world" ',  
+  'Sebastian The Best Friend in the world',  
 
   'Maria Gladis', 
   'Mary luz Becerra',
