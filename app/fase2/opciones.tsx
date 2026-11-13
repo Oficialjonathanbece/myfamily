@@ -3,6 +3,7 @@ import '@/styles/fase2/OptionWheel.css';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PasswordModal from '@/app/fase2/password/PasswordModal';
+import { apiService } from '@/services/api'; // 👈 Importamos el servicio centralizado hacia FastAPI
 
   const ITEMS = [
   'Mary luz',
@@ -24,26 +25,7 @@ import PasswordModal from '@/app/fase2/password/PasswordModal';
   'Familiares'
 ];
 
-  // 🔑 Definimos las claves secretas para cada familiar (puedes cambiarlas a tu gusto)
-  const CLAVES_FAMILIARES: Record<string, string> = {
-  'mary luz' : '230513',
-  'fernando' : '1202',
-  'sebastian' : '131015',
-  'maria gladis' : '1955',
-  'rosmary alejandra pena ramos' : '1899', // Nota: 'pena' sin tilde para que coincida con el normalizador
-  'daniela' : '1234',
-  'danna' : '0405',
-  'flor maria' : '2222',
-  'wesly' : '1511',
-  'fernanda' : '1605',
-  'edinson' : '0602',
-  'cristian y jenifer' : '6666',
-  'salome y emmanuel' : '7777',
-  'hanna' : '0000',
-  'padrino' : '9999',
-  'madrina' : '1000',
-  'familiares' : '1212'
-};
+
 
 export default function Opciones({ onSelect }: { onSelect?: (index: number, item: string) => void }) {
   const router = useRouter();
@@ -67,22 +49,28 @@ export default function Opciones({ onSelect }: { onSelect?: (index: number, item
   };
 
 
-  const handleVerifyPassword = (password: string): boolean => {
-    const slugKey = pendingItem.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const claveCorrecta = CLAVES_FAMILIARES[slugKey]; // Clave por defecto si no está en el diccionario
+ // Validación de contraseña conectada al backend de FastAPI
+  const handleVerifyPassword = async (password: string): Promise<boolean> => {
+    try {
+      const slugKey = pendingItem.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const slug = slugKey.replace(/\s+/g, '-');
 
-    if (password === claveCorrecta) {
-      // Clave exitosa -> Cierra modal y redirige a la ruta dinámica
+      // Consultamos al servidor de FastAPI si la clave es correcta para este slug
+      await apiService.loginProfile(slug, password);
+
+      // Si el servidor responde 200 OK:
       setShowModal(false);
 
-      // 🔒 Creamos un pase de acceso temporal para este familiar específico
-      sessionStorage.setItem(`auth_${slugKey}`, 'true');
+      // Creamos el pase de acceso temporal en el navegador
+      sessionStorage.setItem(`auth_${slug}`, 'true');
 
-      const slug = slugKey.replace(/\s+/g, '-');
+      // Redirigimos a la ruta dinámica protegida
       router.push(`/general/${slug}`);
       return true;
+    } catch (err) {
+      // Si el servidor retorna error (401 o 404), la clave es incorrecta
+      return false; 
     }
-    return false; // Retorna falso para que el modal muestre el error
   };
 
  return (

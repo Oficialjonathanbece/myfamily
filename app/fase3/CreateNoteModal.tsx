@@ -6,7 +6,8 @@ import '@/styles/fase3/CreateNoteModal.css';
 interface CreateNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmitNote: (content: string, adminCode: string) => boolean; // Retorna true si el código admin y la nota son correctos
+  // Cambiamos a que retorne una Promesa o booleano de forma asíncrona para validar contra el servidor
+  onSubmitNote: (content: string, adminCode: string) => Promise<boolean> | boolean;
 }
 
 export default function CreateNoteModal({ isOpen, onClose, onSubmitNote }: CreateNoteModalProps) {
@@ -14,40 +15,49 @@ export default function CreateNoteModal({ isOpen, onClose, onSubmitNote }: Creat
   const [adminCode, setAdminCode] = useState('');
   const [noteContent, setNoteContent] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  // Código especial predeterminado para crear notas (puedes cambiarlo o moverlo a config)
-  const SPECIAL_ADMIN_CODE = '9876';
-
+  // Paso 1: Solo guardamos el código temporalmente en memoria y pasamos a la pantalla de redactar
   const handleVerifyCode = (e: FormEvent) => {
     e.preventDefault();
-    if (adminCode === SPECIAL_ADMIN_CODE) {
-      setStep('write');
-      setErrorMsg('');
-    } else {
-      setErrorMsg('Código de administración incorrecto.');
-      setAdminCode('');
+    if (!adminCode.trim()) {
+      setErrorMsg('Introduce el código de administración.');
+      return;
     }
+    // Pasamos a la redacción; el código real se enviará junto con la nota al backend
+    setStep('write');
+    setErrorMsg('');
   };
 
-  const handleSaveNote = (e: FormEvent) => {
+  // Paso 2: Al guardar, enviamos la nota y el código admin al backend mediante la función superior
+  const handleSaveNote = async (e: FormEvent) => {
     e.preventDefault();
     if (!noteContent.trim()) {
       setErrorMsg('La nota no puede estar vacía.');
       return;
     }
 
-    const success = onSubmitNote(noteContent, adminCode);
-    if (success) {
-      // Reiniciamos estados y cerramos
-      setStep('verify');
-      setAdminCode('');
-      setNoteContent('');
-      setErrorMsg('');
-      onClose();
-    } else {
-      setErrorMsg('Hubo un error al guardar la nota.');
+    setIsLoading(true);
+    setErrorMsg('');
+
+    try {
+      const success = await onSubmitNote(noteContent.trim(), adminCode);
+      if (success) {
+        // Reiniciamos estados y cerramos
+        setStep('verify');
+        setAdminCode('');
+        setNoteContent('');
+        setErrorMsg('');
+        onClose();
+      } else {
+        setErrorMsg('Código de administración incorrecto o error al guardar.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Hubo un error al guardar la nota.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -91,7 +101,7 @@ export default function CreateNoteModal({ isOpen, onClose, onSubmitNote }: Creat
                   Cancelar
                 </button>
                 <button type="submit" className="note-modal__btn-submit">
-                  Verificar
+                  Continuar
                 </button>
               </div>
             </form>
@@ -110,6 +120,7 @@ export default function CreateNoteModal({ isOpen, onClose, onSubmitNote }: Creat
                 onChange={(e) => setNoteContent(e.target.value)}
                 autoFocus
                 className="note-modal__textarea"
+                disabled={isLoading}
               />
 
               {errorMsg && <span className="note-modal__error">{errorMsg}</span>}
@@ -119,11 +130,12 @@ export default function CreateNoteModal({ isOpen, onClose, onSubmitNote }: Creat
                   type="button"
                   onClick={handleCloseModal}
                   className="note-modal__btn-cancel"
+                  disabled={isLoading}
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="note-modal__btn-submit">
-                  Guardar Nota
+                <button type="submit" className="note-modal__btn-submit" disabled={isLoading}>
+                  {isLoading ? 'Guardando...' : 'Guardar Nota'}
                 </button>
               </div>
             </form>

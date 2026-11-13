@@ -2,26 +2,42 @@
 
 import { useState, type FormEvent } from 'react';
 import '@/styles/fase2/password/PasswordModal.css';
+import { apiService } from '@/services/api';
+import { useRouter } from 'next/navigation';
 
 interface PasswordModalProps {
   isOpen: boolean;
   itemName: string;
   onClose: () => void;
-  onSubmitPassword: (password: string) => boolean; // Devuelve true si la clave es correcta
+  onSubmitPassword: (password: string) => Promise<boolean>; // 👈 Espera la función asíncrona
 }
 
-export default function PasswordModal({ isOpen, itemName, onClose, onSubmitPassword }: PasswordModalProps) {
-  const [passwordInput, setPasswordInput] = useState('');
+export default function PasswordModal({ isOpen, onClose, itemName, onSubmitPassword }: PasswordModalProps) {
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const success = onSubmitPassword(passwordInput);
-    if (!success) {
-      setErrorMsg('Clave incorrecta. Inténtalo de nuevo.');
-      setPasswordInput('');
+    setIsLoading(true);
+    setErrorMsg('');
+
+    try {
+      // Validar credenciales contra el backend en FastAPI
+      const success = await onSubmitPassword(password);
+
+      if (!success) {
+        setErrorMsg('Clave incorrecta.');
+        setPassword('');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Clave incorrecta.');
+      setPassword('');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -39,8 +55,8 @@ export default function PasswordModal({ isOpen, itemName, onClose, onSubmitPassw
           <input
             type="password"
             placeholder="Clave"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             autoFocus
             className="password-modal__input"
           />
@@ -51,7 +67,7 @@ export default function PasswordModal({ isOpen, itemName, onClose, onSubmitPassw
             <button
               type="button"
               onClick={() => {
-                setPasswordInput('');
+                setPassword('');
                 setErrorMsg('');
                 onClose();
               }}

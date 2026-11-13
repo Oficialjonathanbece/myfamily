@@ -4,17 +4,21 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import CreateNoteModal from '@/app/fase3/CreateNoteModal'; // 👈 Verifica que esta ruta sea la tuya
 import NoteCard from '@/app/fase3/NoteCard';             // 👈 Verifica que esta ruta sea la tuya
+import { apiService } from '@/services/api';
 
 interface Comment {
+  id: number;
   text: string;
-  date: string;
+  author: string;
+  created_at: string;
 }
 
 interface Note {
-  id: string;
+  id: number;
+  profile_slug: string;
   content: string;
-  date: string;
-  comment?: Comment | null;
+  created_at: string;
+  comments: Comment[];
 }
 
 function ContenidoPaginaGeneral() {
@@ -26,19 +30,9 @@ function ContenidoPaginaGeneral() {
 
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: '1',
-      content: 'Bienvenido al muro de notas de este perfil. Aquí podrás registrar información importante.',
-      date: '12 de Noviembre, 2026',
-      comment: {
-        text: '¡Entendido! Todo claro por aquí.',
-        date: '12 de Noviembre, 2026'
-      }
-    }
-  ]);
-
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+  const [notes, setNotes] = useState<Note[]>([]);
+    
   // 1. Validar la sesión al cargar la página
   useEffect(() => {
     if (slug) {
@@ -50,42 +44,55 @@ function ContenidoPaginaGeneral() {
         router.push('/');
       } else {
         setIsAuthorized(true);
+        fetchNotes(slug);
       }
     }
   }, [slug, router]);
 
-  // 2. Función para manejar la creación de una nueva nota
-  const handleCreateNote = (content: string, adminCode: string): boolean => {
-    const SPECIAL_ADMIN_CODE = '9876';
-    if (adminCode !== SPECIAL_ADMIN_CODE) return false;
-
-    const newNote: Note = {
-      id: Date.now().toString(),
-      content,
-      date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
-      comment: null
-    };
-
-    setNotes([newNote, ...notes]);
-    return true;
+  const fetchNotes = async (profileSlug: string) => {
+    try {
+      const data = await apiService.getNotes(profileSlug);
+      setNotes(data);
+    } catch (error) {
+      console.error('Error al obtener notas:', error);
+    } finally {
+      setIsLoadingNotes(false);
+    }
   };
 
-  // 3. Función para agregar el comentario único
-  const handleAddComment = (noteId: string, commentText: string) => {
-    setNotes(prevNotes =>
-      prevNotes.map(note => {
-        if (note.id === noteId && !note.comment) {
-          return {
-            ...note,
-            comment: {
-              text: commentText,
-              date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
-            }
-          };
-        }
-        return note;
-      })
-    );
+  
+  // 2. Crear nota conectada al backend
+  const handleCreateNote = async (content: string, adminCode: string): Promise<boolean> => {
+    try {
+      const newNote = await apiService.createNote(slug, content, adminCode);
+      setNotes(prev => [newNote, ...prev]);
+      return true;
+    } catch (error: any) {
+      alert(error.message || 'Error al crear la nota');
+      return false;
+    }
+  };
+
+  // 3. Agregar comentario conectado al backend
+  const handleAddComment = async (noteId: number, text: string, author: string) => {
+    try {
+      const newComment = await apiService.addComment(noteId, text, author);
+      
+      // Actualizar estado local agregando el comentario a su respectiva nota
+      setNotes(prevNotes =>
+        prevNotes.map(note => {
+          if (note.id === noteId) {
+            return {
+              ...note,
+              comments: [...note.comments, newComment]
+            };
+          }
+          return note;
+        })
+      );
+    } catch (error: any) {
+      alert(error.message || 'Error al enviar el comentario');
+    }
   };
 
   if (!isAuthorized) {
@@ -160,8 +167,10 @@ function ContenidoPaginaGeneral() {
 
       {/* Muro de Notas */}
       <div style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {notes.length === 0 ? (
-          <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>No hay notas registradas todavía.</p>
+        {isLoadingNotes ? (
+          <p style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>Cargando notas del servidor...</p>
+        ) : notes.length === 0 ? (
+          <p style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>No hay notas registradas todavía en este perfil.</p>
         ) : (
           notes.map(note => (
             <NoteCard
